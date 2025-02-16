@@ -39,4 +39,4 @@ build/
 .DS_Store
 
 .deploy.log
-.write.sh
+/write.sh

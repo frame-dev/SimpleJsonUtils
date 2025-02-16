@@ -7,22 +7,27 @@ import java.util.*;
 @SuppressWarnings({"CallToPrintStackTrace", "unchecked", "rawtypes", "unused"})
 public class JsonParser {
 
-    private final boolean intend;
-    private final boolean debug;
+    private boolean intend;
+    private boolean debug;
 
     public JsonParser() {
         this.intend = false;
         this.debug = false;
     }
 
-    public JsonParser(boolean intend) {
-        this.intend = intend;
-        this.debug = false;
+    public JsonParser(Flag... flags) {
+        for (Flag f : flags) {
+            this.intend = f == Flag.INTEND || f == Flag.PRETTY_PRINT;
+            this.debug = f == Flag.DEBUG;
+        }
     }
 
-    public JsonParser(boolean intend, boolean debug) {
-        this.intend = intend;
+    public void setDebug(boolean debug) {
         this.debug = debug;
+    }
+
+    public void setIntend(boolean intend) {
+        this.intend = intend;
     }
 
     // ✅ Serialize Object to JSON
