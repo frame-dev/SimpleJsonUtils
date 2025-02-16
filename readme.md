@@ -60,7 +60,7 @@ repositories {
 }
 
 dependencies {
-    implementation "ch.framedev:SimpleJsonUtils:1.0.2.3-RELEASE"
+    implementation "ch.framedev:SimpleJsonUtils:1.0.3-RELEASE"
 }
 ```
 
@@ -74,7 +74,7 @@ repositories {
 }
 
 dependencies {
-    implementation("ch.framedev:SimpleJsonUtils:1.0.2.3-RELEASE")
+    implementation("ch.framedev:SimpleJsonUtils:1.0.3-RELEASE")
 }
 ```
 
