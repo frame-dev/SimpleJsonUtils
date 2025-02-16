@@ -16,6 +16,7 @@ public class JsonParser {
     }
 
     public JsonParser(Flag... flags) {
+        // check for flags
         for (Flag f : flags) {
             this.intend = f == Flag.INTEND || f == Flag.PRETTY_PRINT;
             this.debug = f == Flag.DEBUG;
