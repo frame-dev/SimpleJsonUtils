@@ -6,45 +6,45 @@ There are flags available for debugging and pretty printing.
 
 ### Usage
 ``` java
-# No pretty printing no debugging
+// No pretty printing no debugging
 JsonParser jsonParser = new JsonParser();
 
-# for pretty printing
+// for pretty printing
 JsonParser jsonParser = new JsonParser(Flag.PRETTY_PRINT);
-# or
+// or
 JsonParser jsonParser = new JsonParser();
 jsonParser.setIntend(true);
 
-# for debugging
+// for debugging
 JsonParser jsonParser = new JsonParser(Flag.DEBUG);
-# or
+// or
 JsonParser jsonParser = new JsonParser();
 jsonParser.setDebug(true);
 
-# for both debugging and pretty printing
+// for both debugging and pretty printing
 JsonParser jsonParser = new JsonParser(Flag.PRETTY_PRINT, Flag.DEBUG);
-# or
+// or
 JsonParser jsonParser = new JsonParser();
 jsonParser.setIntend(true);
 jsonParser.setDebug(true);
 ```
 for object to string use
 ``` java
-# Serialize object
+// Serialize object
 jsonParser.serializeObject(object);
 ```
 ``` java
-# deserialize object
+// deserialize object
 jsonParser.deserializeObject(object, class);
 ```
 for object to file use
 ``` java
-# serialize object to file
+// serialize object to file
 jsonParser.saveToFile(file, object);
 ```
 
 ``` java
-# deserialize object from file
+// deserialize object from file
 jsonParser.loadFromFile(file, class);
 ```
 
