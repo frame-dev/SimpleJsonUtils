@@ -50,7 +50,7 @@ jsonParser.loadFromFile(file, class);
 
 ## Repository
 ### Maven
-```
+``` xml
 <repositories>
     <repository>
         <id>framedev-repository</id>
@@ -67,12 +67,21 @@ jsonParser.loadFromFile(file, class);
     </dependency>
 </dependencies>
 ```
-### Gradle
-
-```
+### Gradle Groovy
+``` groovy
 maven {
     url "https://repository.framedev.ch:444/releases"
 }
 
 implementation "ch.framedev:SimpleJsonUtils:1.0.2.3-RELEASE"
+```
+
+### Gradle Kotlin
+``` kotlin
+maven {
+    name = "framedevRepositoryReleases"
+    url = uri("https://repository.framedev.ch:444/releases")
+}
+
+implementation("ch.framedev:SimpleJsonUtils:1.0.2.3-RELEASE")
 ```
