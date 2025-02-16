@@ -92,7 +92,6 @@ public class JsonParser {
     // ✅ Deserialize JSON String to Java Object
     public Object deserializeObject(String json, Class<?> clazz) {
         json = json.trim();
-        json = json.replace(" ", "");
 
         if (!isCustomClass(clazz)) {
             return convertValue(clazz, json);
@@ -320,7 +319,7 @@ public class JsonParser {
             } else if ((c == ',' || i == json.length() - 1) && !insideString && nestedLevel == 0) {
                 if (foundSeparator) {
                     String keyStr = key.toString().trim().replace("\"", "");
-                    String valueStr = value.toString().trim();
+                    String valueStr = value.toString();
 
                     if (i == json.length() - 1 && c != ',') {
                         valueStr += c; // Append last character if needed
@@ -395,10 +394,11 @@ public class JsonParser {
 
     private Object convertValue(Class<?> type, Object value) {
         if (value == null) return null;
-        String strValue = value.toString().replace("\"", "").trim();
+        String strValue = value.toString().replace("\"", "");
 
         // ✅ Handle Strings
         if (type == String.class) return strValue;
+        strValue = strValue.trim();
 
         // ✅ Handle Booleans
         if (type == boolean.class || type == Boolean.class) return Boolean.parseBoolean(strValue);
