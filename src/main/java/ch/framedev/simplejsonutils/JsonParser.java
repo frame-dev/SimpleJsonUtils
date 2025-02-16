@@ -18,7 +18,7 @@ public class JsonParser {
     public JsonParser(Flag... flags) {
         // check for flags
         for (Flag f : flags) {
-            this.indent = f == Flag.INDENT || f == Flag.PRETTY_PRINT;
+            this.indent = f == Flag.USE_INDENT || f == Flag.PRETTY_PRINT;
             this.debug = f == Flag.DEBUG;
         }
     }
