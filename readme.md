@@ -84,8 +84,8 @@ dependencies {
 
 ### **Basic Setup**
 ```java
-import ch.framedev.simplejson.JsonParser;
-import ch.framedev.simplejson.Flag;
+import ch.framedev.simplejsonutils.JsonParser;
+import ch.framedev.simplejsonutils.Flag;
 
 // Default (no pretty-printing, no debugging)
 JsonParser jsonParser = new JsonParser();
