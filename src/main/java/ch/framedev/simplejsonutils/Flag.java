@@ -14,6 +14,6 @@ package ch.framedev.simplejsonutils;
 public enum Flag {
 
     PRETTY_PRINT,
-    INTEND,
+    INDENT,
     DEBUG;
 }

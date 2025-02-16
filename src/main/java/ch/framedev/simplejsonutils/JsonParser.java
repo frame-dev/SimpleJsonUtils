@@ -7,18 +7,18 @@ import java.util.*;
 @SuppressWarnings({"CallToPrintStackTrace", "unchecked", "rawtypes", "unused"})
 public class JsonParser {
 
-    private boolean intend;
+    private boolean indent;
     private boolean debug;
 
     public JsonParser() {
-        this.intend = false;
+        this.indent = false;
         this.debug = false;
     }
 
     public JsonParser(Flag... flags) {
         // check for flags
         for (Flag f : flags) {
-            this.intend = f == Flag.INTEND || f == Flag.PRETTY_PRINT;
+            this.indent = f == Flag.INDENT || f == Flag.PRETTY_PRINT;
             this.debug = f == Flag.DEBUG;
         }
     }
@@ -27,8 +27,8 @@ public class JsonParser {
         this.debug = debug;
     }
 
-    public void setIntend(boolean intend) {
-        this.intend = intend;
+    public void setIndent(boolean indent) {
+        this.indent = indent;
     }
 
     // ✅ Serialize Object to JSON
@@ -48,17 +48,17 @@ public class JsonParser {
 
     private String serializeList(List<?> list, int indentLevel) {
         StringBuilder sb = new StringBuilder("[");
-        String indent = intend ? "\n" + "  ".repeat(indentLevel + 1) : "";
+        String indent = this.indent ? "\n" + "  ".repeat(indentLevel + 1) : "";
         for (Object item : list) {
             sb.append(indent).append(serializeValue(item, indentLevel + 1)).append(",");
         }
         if (!list.isEmpty()) sb.setLength(sb.length() - 1);
-        return sb.append(intend ? "\n" + "  ".repeat(indentLevel) + "]" : "]").toString();
+        return sb.append(this.indent ? "\n" + "  ".repeat(indentLevel) + "]" : "]").toString();
     }
 
     private String serializeMap(Map<?, ?> map, int indentLevel) {
         StringBuilder sb = new StringBuilder("{");
-        String indent = intend ? "\n" + "  ".repeat(indentLevel + 1) : "";
+        String indent = this.indent ? "\n" + "  ".repeat(indentLevel + 1) : "";
         for (Map.Entry<?, ?> entry : map.entrySet()) {
             sb.append(indent)
                     .append("\"").append(entry.getKey()).append("\": ")
@@ -66,13 +66,13 @@ public class JsonParser {
                     .append(",");
         }
         if (!map.isEmpty()) sb.setLength(sb.length() - 1);
-        return sb.append(intend ? "\n" + "  ".repeat(indentLevel) + "}" : "}").toString();
+        return sb.append(this.indent ? "\n" + "  ".repeat(indentLevel) + "}" : "}").toString();
     }
 
     private String serializeObjectFields(Object obj, int indentLevel) {
         StringBuilder sb = new StringBuilder("{");
         Field[] fields = obj.getClass().getDeclaredFields();
-        String indent = intend ? "\n" + "  ".repeat(indentLevel + 1) : "";
+        String indent = this.indent ? "\n" + "  ".repeat(indentLevel + 1) : "";
         for (Field field : fields) {
             if (!Modifier.isStatic(field.getModifiers())) {
                 try {
@@ -86,7 +86,7 @@ public class JsonParser {
             }
         }
         if (sb.length() > 1) sb.setLength(sb.length() - 1);
-        return sb.append(intend ? "\n" + "  ".repeat(indentLevel) + "}" : "}").toString();
+        return sb.append(this.indent ? "\n" + "  ".repeat(indentLevel) + "}" : "}").toString();
     }
 
     // ✅ Deserialize JSON String to Java Object
