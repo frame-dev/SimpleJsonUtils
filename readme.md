@@ -45,7 +45,7 @@ It includes **debugging** and **pretty-printing** options for better readability
     <dependency>
         <groupId>ch.framedev</groupId>
         <artifactId>SimpleJsonUtils</artifactId>
-        <version>1.0.3.2-RELEASE</version>
+        <version>1.0.6-RELEASE</version>
         <scope>compile</scope>
     </dependency>
 </dependencies>
@@ -60,7 +60,7 @@ repositories {
 }
 
 dependencies {
-    implementation "ch.framedev:SimpleJsonUtils:1.0.3.2-RELEASE"
+    implementation "ch.framedev:SimpleJsonUtils:1.0.6-RELEASE"
 }
 ```
 
@@ -74,7 +74,7 @@ repositories {
 }
 
 dependencies {
-    implementation("ch.framedev:SimpleJsonUtils:1.0.3.2-RELEASE")
+    implementation("ch.framedev:SimpleJsonUtils:1.0.6-RELEASE")
 }
 ```
 
