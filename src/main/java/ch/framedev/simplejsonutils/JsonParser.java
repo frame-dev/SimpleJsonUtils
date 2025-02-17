@@ -18,8 +18,8 @@ public class JsonParser {
     public JsonParser(Flag... flags) {
         // check for flags
         for (Flag f : flags) {
-            this.indent = f == Flag.USE_INDENT || f == Flag.PRETTY_PRINT;
-            this.debug = f == Flag.DEBUG;
+            if (f == Flag.USE_INDENT || f == Flag.PRETTY_PRINT) this.indent = true;
+            if (f == Flag.DEBUG) this.debug = true;
         }
     }
 
@@ -38,11 +38,18 @@ public class JsonParser {
 
     private String serializeValue(Object value, int indentLevel) {
         if (value == null) return "null";
-        if (value instanceof String) return "\"" + escapeJson(value.toString()) + "\"";
+
+        if (value instanceof Map) return serializeMap((Map<?, ?>) value, indentLevel);
         if (value instanceof Number || value instanceof Boolean) return value.toString();
         if (value instanceof List) return serializeList((List<?>) value, indentLevel);
-        if (value instanceof Map) return serializeMap((Map<?, ?>) value, indentLevel);
         if (isCustomClass(value.getClass())) return serializeObjectFields(value, indentLevel);
+
+        if (value instanceof String) {
+            String strValue = (String) value;
+
+            // ✅ Ensure we only add quotes if the string isn't already escaped properly
+            return "\"" + escapeJson(strValue) + "\"";
+        }
         throw new IllegalArgumentException("Unsupported data type: " + value.getClass().getSimpleName());
     }
 
@@ -57,36 +64,68 @@ public class JsonParser {
     }
 
     private String serializeMap(Map<?, ?> map, int indentLevel) {
+        if (map.isEmpty()) return "{}"; // ✅ Handle empty maps safely
+
         StringBuilder sb = new StringBuilder("{");
         String indent = this.indent ? "\n" + "  ".repeat(indentLevel + 1) : "";
+
+        int count = 0; // Track number of elements to prevent trailing comma
         for (Map.Entry<?, ?> entry : map.entrySet()) {
+            if (entry.getKey() == null) {
+                System.err.println("❌ Warning: Null key detected. Skipping entry.");
+                continue; // ✅ Skip the entry
+            }
+            String key = escapeJson(entry.getKey().toString());
+            Object value = entry.getValue();
+
+            // ✅ Ensure the value is serialized correctly
+            String serializedValue = serializeValue(value, indentLevel + 1);
+
             sb.append(indent)
-                    .append("\"").append(entry.getKey()).append("\": ")
-                    .append(serializeValue(entry.getValue(), indentLevel + 1))
-                    .append(",");
+                    .append("\"").append(key).append("\": ") // ✅ Properly quote the key
+                    .append(serializedValue);
+
+            count++;
+            if (count < map.size()) sb.append(","); // ✅ Prevent trailing comma issue
         }
-        if (!map.isEmpty()) sb.setLength(sb.length() - 1);
+
         return sb.append(this.indent ? "\n" + "  ".repeat(indentLevel) + "}" : "}").toString();
     }
 
     private String serializeObjectFields(Object obj, int indentLevel) {
-        StringBuilder sb = new StringBuilder("{");
         Field[] fields = obj.getClass().getDeclaredFields();
+        if (fields.length == 0) return "{}"; // ✅ Handle empty objects
+
+        StringBuilder sb = new StringBuilder("{");
         String indent = this.indent ? "\n" + "  ".repeat(indentLevel + 1) : "";
+        String closingIndent = this.indent ? "\n" + "  ".repeat(indentLevel) : ""; // ✅ Ensure proper alignment
+        boolean hasFields = false; // ✅ Track if any fields were added
+
         for (Field field : fields) {
             if (!Modifier.isStatic(field.getModifiers())) {
                 try {
-                    field.setAccessible(true);
-                    sb.append(indent)
-                            .append("\"").append(field.getName()).append("\": ")
-                            .append(serializeValue(field.get(obj), indentLevel + 1))
+                    if (!field.trySetAccessible()) continue; // ✅ Skip non-accessible fields (Java 9+)
+                    Object fieldValue = field.get(obj);
+                    String serializedValue = serializeValue(fieldValue, indentLevel + 1);
+
+                    sb.append(indent) // ✅ Indent properly before each field
+                            .append("\"").append(escapeJson(field.getName())).append("\": ")
+                            .append(fieldValue != null ? serializedValue : "null")
                             .append(",");
-                } catch (Exception ignored) {
+
+                    hasFields = true;
+                } catch (Exception e) {
+                    System.err.println("⚠️ Warning: Could not access field '" + field.getName() + "' in " + obj.getClass().getSimpleName());
                 }
             }
         }
-        if (sb.length() > 1) sb.setLength(sb.length() - 1);
-        return sb.append(this.indent ? "\n" + "  ".repeat(indentLevel) + "}" : "}").toString();
+
+        // ✅ Ensure the last comma is removed only if fields were added
+        if (hasFields) {
+            sb.setLength(sb.length() - 1);
+        }
+
+        return sb.append(closingIndent).append("}").toString();
     }
 
     // ✅ Deserialize JSON String to Java Object
@@ -266,7 +305,7 @@ public class JsonParser {
 
     private Map<String, Object> parseJsonMap(String json) {
         json = json.trim();
-        if(debug) System.out.println("🔍 Processing JSON Map: " + json);
+        if (debug) System.out.println("🔍 Processing JSON Map: " + json);
 
         if (!json.startsWith("{") || !json.endsWith("}")) {
             throw new IllegalArgumentException("Invalid JSON object format: " + json);
@@ -319,34 +358,45 @@ public class JsonParser {
             } else if ((c == ',' || i == json.length() - 1) && !insideString && nestedLevel == 0) {
                 if (foundSeparator) {
                     String keyStr = key.toString().trim().replace("\"", "");
-                    String valueStr = value.toString();
+                    String valueStr = value.toString().trim();
 
                     if (i == json.length() - 1 && c != ',') {
                         valueStr += c; // Append last character if needed
                     }
 
-                    if(debug) System.out.println("📌 Key: " + keyStr + " | Value: " + (valueStr.isEmpty() ? "(missing)" : valueStr));
+                    if (debug)
+                        System.out.println("📌 Key: " + keyStr + " | Value: " + (valueStr.isEmpty() ? "(missing)" : valueStr));
 
                     if (!keyStr.isEmpty()) {
-                        if (valueStr.startsWith("{") || valueStr.startsWith("[") && (valueStr.endsWith("}") || valueStr.endsWith("|"))) {
-                            deferredProcessing.put(keyStr, valueStr); // Defer processing of nested structures
+                        // ✅ Check for nested objects/lists
+                        valueStr = valueStr.trim();
+                        if (valueStr.startsWith("{") && valueStr.endsWith("}")) {
+                            deferredProcessing.put(keyStr, valueStr); // ✅ Defer processing of nested JSON
+                        } else if (valueStr.startsWith("[") && valueStr.endsWith("]")) {
+                            map.put(keyStr, parseJsonList(parseJsonRawList(valueStr), Object.class));
                         } else {
-                            map.put(keyStr, parseJsonValue(valueStr)); // Process immediately
+                            map.put(keyStr, parseJsonValue(valueStr)); // ✅ Process immediately
                         }
                     }
                 }
 
                 String keyStr = key.toString().replace("\"", "").trim();
                 String valueStr;
-                if(!map.containsKey(keyStr) && !deferredProcessing.containsKey(keyStr)) {
+                if (!map.containsKey(keyStr) && !deferredProcessing.containsKey(keyStr)) {
                     String[] pair = keyStr.split(":");
                     keyStr = pair[0];
                     valueStr = pair[1];
                     if (i == json.length() - 1 && c != ',') {
                         valueStr += c; // Append last character if needed
                     }
-                    if(debug) System.out.println("Missing key added: " + keyStr + " Value: " + valueStr);
-                    map.put(keyStr, parseJsonValue(valueStr));
+                    if (debug) System.out.println("Missing key added: " + keyStr + " Value: " + valueStr);
+                    if (valueStr.startsWith("{")) {
+                        deferredProcessing.put(keyStr, valueStr); // ✅ Defer processing of nested JSON
+                    }
+                    if (valueStr.startsWith("[")) {
+                        map.put(keyStr, parseJsonList(parseJsonRawList(valueStr), Object.class));
+                    } else
+                        map.put(keyStr, parseJsonValue(valueStr));
                 }
 
                 key.setLength(0);
@@ -362,12 +412,12 @@ public class JsonParser {
             }
         }
 
-        // Process deferred nested structures
+        // ✅ Process deferred nested structures
         for (Map.Entry<String, String> entry : deferredProcessing.entrySet()) {
             String keyStr = entry.getKey();
             String valueStr = entry.getValue();
 
-            if(debug) System.out.println("⏳ Processing deferred: " + keyStr + " → " + valueStr);
+            if (debug) System.out.println("⏳ Processing deferred: " + keyStr + " → " + valueStr);
 
             if (valueStr.startsWith("{")) {
                 map.put(keyStr, parseJsonMap(valueStr));
@@ -375,8 +425,26 @@ public class JsonParser {
                 map.put(keyStr, parseJsonList(parseJsonRawList(valueStr), Object.class));
             }
         }
-
         return map;
+    }
+
+    private Map<String, Object> cleanJsonStrings(Map<String, Object> map) {
+        Map<String, Object> cleanedMap = new HashMap<>();
+        for (Map.Entry<String, Object> entry : map.entrySet()) {
+            Object value = entry.getValue();
+            if (value instanceof String) {
+                String strValue = (String) value;
+
+                if (strValue.contains("\"")) {
+                    strValue = strValue.replace("\"", "");
+                }
+
+                cleanedMap.put(entry.getKey(), strValue);
+            } else {
+                cleanedMap.put(entry.getKey(), value);
+            }
+        }
+        return cleanedMap;
     }
 
     private int findMatchingBrace(String json, int startIndex) {
@@ -394,11 +462,11 @@ public class JsonParser {
 
     private Object convertValue(Class<?> type, Object value) {
         if (value == null) return null;
-        String strValue = value.toString().replace("\"", "");
+        String strValueTrimmed = escapeJson(value.toString().replaceAll("^\"|\"$", "").replace("\\", "").trim());
+        String strValue = value.toString().replace("\"", "").trim();
 
         // ✅ Handle Strings
-        if (type == String.class) return strValue;
-        strValue = strValue.trim();
+        if (type == String.class) return strValueTrimmed;
 
         // ✅ Handle Booleans
         if (type == boolean.class || type == Boolean.class) return Boolean.parseBoolean(strValue);
@@ -442,7 +510,7 @@ public class JsonParser {
 
         // ✅ Fix: Ensure proper string parsing
         if (value.startsWith("\"") && value.endsWith("\"")) {
-            return value.substring(1, value.length() - 1);
+            return escapeJson(value.substring(1, value.length() - 1).replace("\"", "").replace("\\", ""));
         }
 
         // ✅ Boolean Handling
@@ -463,7 +531,12 @@ public class JsonParser {
     }
 
     private String escapeJson(String str) {
-        return str.replace("\"", "\\\"");
+        return str.replace("\\", "\\\\")   // Escape backslashes
+                .replace("\"", "\\\"")   // Escape double quotes
+                .replace("\n", "\\n")    // Escape newlines
+                .replace("\r", "\\r")    // Escape carriage returns
+                .replace("\t", "\\t")    // Escape tabs
+                .replaceAll("\\\\+$", ""); // ✅ Remove trailing backslashes
     }
 
     private boolean isCustomClass(Class<?> clazz) {
